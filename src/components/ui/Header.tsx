@@ -10,7 +10,7 @@ export default function Header() {
 
   return (
     <header className="hdr">
-      {/* Logo — GlobeX stealth-mode startup brand */}
+      {/* Logo */}
       <div className="hdr-logo">
         <div className="hdr-logo-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="#00FFFF" strokeWidth="1.8"
@@ -21,7 +21,7 @@ export default function Header() {
           </svg>
         </div>
         <div className="hdr-logo-text">
-          Globe<span>X</span>
+          3D Interactive Globe
         </div>
       </div>
 

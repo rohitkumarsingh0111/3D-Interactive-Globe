@@ -3,13 +3,13 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'GlobeX — 3D Interactive Global Event Platform',
+  title: '3D Interactive Globe',
   description:
     'A futuristic 3D interactive Earth globe with real-time live event markers, glassmorphic pop-ups, and smooth zoom-to-location interaction. Built with Next.js 14, React Three Fiber, and WebGL.',
   keywords: ['3D globe', 'interactive map', 'Three.js', 'React Three Fiber', 'WebGL', 'Next.js', 'live events', 'spatial UI'],
-  authors: [{ name: 'GlobeX' }],
+  authors: [{ name: '3D Interactive Globe' }],
   openGraph: {
-    title: 'GlobeX — 3D Interactive Global Event Platform',
+    title: '3D Interactive Globe',
     description: 'Real-time 3D Earth Globe with live event markers and zoom-to-location.',
     type: 'website',
   },
