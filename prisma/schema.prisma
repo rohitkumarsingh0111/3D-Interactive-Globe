@@ -1,5 +1,5 @@
 // prisma/schema.prisma
-// GlobeX — Event database schema
+// GlobeX — Event database schema (Prisma v7 format)
 
 generator client {
   provider = "prisma-client-js"
@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 model Event {

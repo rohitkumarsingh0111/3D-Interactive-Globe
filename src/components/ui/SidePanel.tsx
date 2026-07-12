@@ -2,21 +2,24 @@
 
 // src/components/ui/SidePanel.tsx
 import { useGlobeStore } from '@/store/globeStore';
+import type { GlobeEvent } from '@/types/globe';
 import { GLOBE_EVENTS } from '@/data/events';
-import { latLngToXYZ } from '@/lib/geoUtils';
 
-export default function SidePanel() {
+interface SidePanelProps {
+  events?: GlobeEvent[];
+}
+
+export default function SidePanel({ events = GLOBE_EVENTS }: SidePanelProps) {
   const setActiveEvent = useGlobeStore((s) => s.setActiveEvent);
   const activeEvent    = useGlobeStore((s) => s.activeEvent);
 
   return (
     <aside className="side-panel" aria-label="Live events">
-      {GLOBE_EVENTS.map((ev) => (
+      {events.map((ev) => (
         <button
           key={ev.id}
           className={`side-item${activeEvent?.id === ev.id ? ' side-item-active' : ''}`}
           onClick={() => {
-            // We can't project here (no camera), so we just open with last known center
             setActiveEvent(ev, { x: window.innerWidth / 2, y: window.innerHeight / 2 });
           }}
           aria-label={`View event: ${ev.name} in ${ev.city}`}

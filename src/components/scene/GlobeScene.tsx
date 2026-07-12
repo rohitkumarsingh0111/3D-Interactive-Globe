@@ -13,6 +13,8 @@ import EventMarker from './EventMarker';
 import { GLOBE_EVENTS } from '@/data/events';
 import { useGlobeStore } from '@/store/globeStore';
 import { latLngToXYZ } from '@/lib/geoUtils';
+import type { GlobeEvent } from '@/types/globe';
+
 
 /* ═══════════════════════════════════════════════════════════════
    CONSTANTS
@@ -250,7 +252,7 @@ function CameraController() {
 /* ═══════════════════════════════════════════════════════════════
    PHYSICAL EARTH  (surface + clouds in one rotating group)
 ═══════════════════════════════════════════════════════════════ */
-function EarthGlobe({ radius = 1 }: { radius?: number }) {
+function EarthGlobe({ radius = 1, events = GLOBE_EVENTS }: { radius?: number; events?: GlobeEvent[] }) {
   const groupRef  = useRef<THREE.Group>(null);
   const cloudsRef = useRef<THREE.Mesh>(null);
 
@@ -299,7 +301,7 @@ function EarthGlobe({ radius = 1 }: { radius?: number }) {
       </mesh>
 
       {/* Event markers rotate with the globe */}
-      {GLOBE_EVENTS.map((ev, i) => (
+      {events.map((ev, i) => (
         <EventMarker
           key={ev.id}
           event={ev}
@@ -358,7 +360,7 @@ function PopupTracker() {
 /* ═══════════════════════════════════════════════════════════════
    ROOT SCENE
 ═══════════════════════════════════════════════════════════════ */
-export default function GlobeScene() {
+export default function GlobeScene({ events = GLOBE_EVENTS }: { events?: GlobeEvent[] }) {
   const setActiveEvent = useGlobeStore((s) => s.setActiveEvent);
 
   return (
@@ -376,7 +378,7 @@ export default function GlobeScene() {
       <Suspense fallback={null}>
         <StarField count={5000} />
         <Lighting />
-        <EarthGlobe radius={1} />
+        <EarthGlobe radius={1} events={events} />
         <PopupTracker />
         {/* Custom controller — no OrbitControls */}
         <CameraController />

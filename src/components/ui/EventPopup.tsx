@@ -1,55 +1,37 @@
 'use client';
 
 // src/components/ui/EventPopup.tsx
-// Premium spatial UI popup — targeting brackets, coordinates,
-// signal bars, animated stat tiles, holographic glow layers
+// Premium centered-modal event card
+// Shows when: marker clicked on globe | event clicked in Events tab
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGlobeStore } from '@/store/globeStore';
 import { GlobeEvent } from '@/types/globe';
 
-/* ── Animated user count ticker ───────────────────────────── */
+/* ── Animated user count ticker ─────────────────────────────── */
 function UserCounter({ value }: { value: string }) {
-  const [display, setDisplay] = useState('0');
-
-  useEffect(() => {
-    const num = parseFloat(value.replace('K', '')) * (value.includes('K') ? 1000 : 1);
-    let start = 0;
-    const step = num / 28;
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= num) { setDisplay(value); clearInterval(timer); return; }
-      const v = start >= 1000 ? (start / 1000).toFixed(1) + 'K' : Math.floor(start).toString();
-      setDisplay(v);
-    }, 32);
-    return () => clearInterval(timer);
-  }, [value]);
-
-  return <>{display}</>;
+  const [display, setDisplay] = [value, (v: string) => v]; // simplified, just show value
+  return <>{value}</>;
 }
 
-/* ── Signal-strength bars ─────────────────────────────────── */
+/* ── Signal-strength bars ────────────────────────────────────── */
 function SignalBars({ strength = 4 }: { strength?: number }) {
   const heights = [5, 8, 12, 16, 20];
   return (
     <div className="signal-bars" aria-label={`Signal strength ${strength}/5`}>
       {heights.map((h, i) => (
-        <div
-          key={i}
-          className="signal-bar"
-          style={{
-            height: h,
-            opacity: i < strength ? 1 : 0.18,
-            background: i < strength ? (i < 3 ? '#00FFFF' : '#A855F7') : '#fff',
-          }}
-        />
+        <div key={i} className="signal-bar" style={{
+          height: h,
+          opacity: i < strength ? 1 : 0.18,
+          background: i < strength ? (i < 3 ? '#00FFFF' : '#A855F7') : '#fff',
+        }}/>
       ))}
     </div>
   );
 }
 
-/* ── Popup card ───────────────────────────────────────────── */
+/* ── Popup card ──────────────────────────────────────────────── */
 interface PopupCardProps { event: GlobeEvent; onClose: () => void; }
 
 function PopupCard({ event, onClose }: PopupCardProps) {
@@ -59,6 +41,13 @@ function PopupCard({ event, onClose }: PopupCardProps) {
   const lngLabel = event.lng >= 0
     ? `${event.lng.toFixed(2)}°E`
     : `${Math.abs(event.lng).toFixed(2)}°W`;
+
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   return (
     <div className="sp-card" role="dialog" aria-modal="true" aria-label={event.name}>
@@ -130,9 +119,7 @@ function PopupCard({ event, onClose }: PopupCardProps) {
       <div className="sp-stats">
         <div className="sp-stat sp-stat-primary">
           <div className="sp-stat-icon">👥</div>
-          <div className="sp-stat-val">
-            <UserCounter value={event.users} />
-          </div>
+          <div className="sp-stat-val"><UserCounter value={event.users} /></div>
           <div className="sp-stat-key">ACTIVE USERS</div>
           <div className="sp-stat-trend">↑ 12%</div>
         </div>
@@ -171,46 +158,53 @@ function PopupCard({ event, onClose }: PopupCardProps) {
   );
 }
 
-/* ── Root export ──────────────────────────────────────────── */
+/* ── Root export ──────────────────────────────────────────────── */
 export default function EventPopup() {
   const activeEvent    = useGlobeStore((s) => s.activeEvent);
-  const popupScreen    = useGlobeStore((s) => s.popupScreen);
   const setActiveEvent = useGlobeStore((s) => s.setActiveEvent);
-  const cardRef        = useRef<HTMLDivElement>(null);
-  const [pos, setPos]  = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    if (!activeEvent || !cardRef.current) return;
-    const cW = cardRef.current.offsetWidth  || 300;
-    const cH = cardRef.current.offsetHeight || 380;
-    const vW = window.innerWidth;
-    const vH = window.innerHeight;
-
-    let x = popupScreen.x - cW / 2;
-    let y = popupScreen.y - cH - 22;
-
-    if (x < 12)           x = 12;
-    if (x + cW > vW - 12) x = vW - cW - 12;
-    if (y < 72)           y = popupScreen.y + 22;
-    if (y + cH > vH - 60) y = popupScreen.y - cH - 22;
-
-    setPos({ x, y });
-  }, [activeEvent, popupScreen]);
 
   return (
     <AnimatePresence>
       {activeEvent && (
-        <motion.div
-          key={activeEvent.id}
-          ref={cardRef}
-          initial={{ opacity: 0, scale: 0.88, y: 16, filter: 'blur(4px)' }}
-          animate={{ opacity: 1, scale: 1,    y: 0,  filter: 'blur(0px)' }}
-          exit={{    opacity: 0, scale: 0.88, y: 16, filter: 'blur(4px)' }}
-          transition={{ duration: 0.32, ease: [0.34, 1.1, 0.64, 1] }}
-          style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 200 }}
-        >
-          <PopupCard event={activeEvent} onClose={() => setActiveEvent(null)} />
-        </motion.div>
+        <>
+          {/* Dim backdrop — click to dismiss */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            onClick={() => setActiveEvent(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 190,
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(2px)',
+            }}
+          />
+
+          {/* Centered card — fixed in viewport center */}
+          <motion.div
+            key={activeEvent.id}
+            initial={{ opacity: 0, scale: 0.88, y: 24, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, scale: 1,    y: 0,  filter: 'blur(0px)' }}
+            exit={{    opacity: 0, scale: 0.88, y: 24, filter: 'blur(6px)' }}
+            transition={{ duration: 0.35, ease: [0.34, 1.1, 0.64, 1] }}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0,
+              right: 0, bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 200,
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ pointerEvents: 'auto' }}>
+              <PopupCard event={activeEvent} onClose={() => setActiveEvent(null)} />
+            </div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

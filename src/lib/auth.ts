@@ -46,15 +46,21 @@ export function verifyToken(token: string): boolean {
 
 /**
  * Verifies admin password from environment variable.
+ * timingSafeEqual requires equal-length buffers — pad to same length first.
  */
 export function verifyPassword(password: string): boolean {
   const adminPass = process.env.ADMIN_PASSWORD;
   if (!adminPass) return false;
-  // Constant-time comparison to prevent timing attacks
-  return crypto.timingSafeEqual(
-    Buffer.from(password),
-    Buffer.from(adminPass)
-  );
+  try {
+    // Pad/trim to same byte length to avoid timingSafeEqual throwing
+    const a = Buffer.from(password.padEnd(128).slice(0, 128));
+    const b = Buffer.from(adminPass.padEnd(128).slice(0, 128));
+    const match = crypto.timingSafeEqual(a, b);
+    // Also check real lengths match (prevents padded false-positives)
+    return match && password.length === adminPass.length;
+  } catch {
+    return false;
+  }
 }
 
 export const COOKIE_NAME = 'globex-admin-token';
