@@ -1,12 +1,16 @@
 // src/lib/db.ts
-// Prisma client with libsql adapter for SQLite (Prisma v7)
-import path from 'path';
+// Prisma client with libsql adapter — works with local SQLite and remote Turso
 import { PrismaClient } from '@prisma/client';
 import { PrismaLibSql } from '@prisma/adapter-libsql';
 
 function createPrismaClient() {
-  const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-  const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL environment variable is not set');
+
+  // DATABASE_AUTH_TOKEN is required for remote Turso; ignored for local file: URLs
+  const authToken = process.env.DATABASE_AUTH_TOKEN;
+
+  const adapter = new PrismaLibSql({ url, ...(authToken ? { authToken } : {}) });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new PrismaClient({ adapter } as any);
 }

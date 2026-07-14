@@ -1,12 +1,10 @@
-// src/middleware.ts
+// src/proxy.ts
 // Protects /admin/* routes — redirects unauthenticated users to login
-// Uses nodejs runtime to allow crypto module for token verification
+// Renamed from middleware.ts → proxy.ts (Next.js 16 convention)
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export const runtime = 'nodejs';
-
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow login page and API routes
