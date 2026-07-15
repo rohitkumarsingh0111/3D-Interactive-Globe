@@ -13,6 +13,14 @@ import EventPopup    from '@/components/ui/EventPopup';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import TabPanel      from '@/components/ui/TabPanel';
 
+const NAV_TABS: { id: NavTab; label: string; icon: string }[] = [
+  { id: 'globe',     label: 'Globe',     icon: '🌐' },
+  { id: 'events',    label: 'Events',    icon: '📡' },
+  { id: 'analytics', label: 'Stats',     icon: '📊' },
+  { id: 'network',   label: 'Network',   icon: '🔗' },
+];
+
+
 const GlobeScene = dynamic(() => import('@/components/scene/GlobeScene'), {
   ssr: false, loading: () => null,
 });
@@ -52,8 +60,8 @@ export default function HomePage() {
     <>
       <LoadingScreen />
 
-      {/* 3D canvas — always full screen */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+      {/* 3D canvas — always full screen, clips bottom on mobile */}
+      <div className="globe-canvas-wrap" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
         <GlobeScene events={events} />
       </div>
 
@@ -94,8 +102,23 @@ export default function HomePage() {
         className={`hint${hintHidden ? ' hint-hidden' : ''}`}
         aria-label="Interaction hint"
       >
-        ↔ Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Click markers
+        ↔ Drag · Pinch zoom · Tap markers
       </div>
+
+      {/* Mobile bottom navigation bar (hidden on desktop via CSS) */}
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        {NAV_TABS.map(({ id, label, icon }) => (
+          <button
+            key={id}
+            className={`mobile-nav-btn${activeTab === id ? ' active' : ''}`}
+            onClick={() => handleTabChange(id as NavTab)}
+            aria-label={label}
+          >
+            <span className="mobile-nav-icon">{icon}</span>
+            {label}
+          </button>
+        ))}
+      </nav>
     </>
   );
 }

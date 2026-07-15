@@ -54,7 +54,8 @@ function CameraController() {
   const tgtAtDragStart = useRef(new THREE.Spherical());
 
   // Touch state
-  const prevTouches = useRef<{ x: number; y: number }[]>([]);
+  const prevTouches   = useRef<{ x: number; y: number }[]>([]);
+  const touchStartPos = useRef({ x: 0, y: 0 });
 
   // Raycaster + unit sphere for intersection tests
   const raycaster   = useMemo(() => new THREE.Raycaster(), []);
@@ -177,11 +178,14 @@ function CameraController() {
     };
 
     // ── TOUCH ────────────────────────────────────────────────
+    const TAP_THRESHOLD = 8; // px — below this = tap, above = drag
+
     const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
+      // Don't preventDefault here — allow R3F onClick to fire on taps
       prevTouches.current = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
       if (e.touches.length === 1) {
-        dragging.current = true;
+        touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        dragging.current = false; // will be set true only if movement exceeds threshold
         dragOrigin.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         tgtAtDragStart.current.copy(tgtS.current);
       }
@@ -189,26 +193,36 @@ function CameraController() {
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
       const cur = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
 
-      if (e.touches.length === 1 && dragging.current) {
-        // Single-finger drag → rotate
-        const dx = cur[0].x - dragOrigin.current.x;
-        const dy = cur[0].y - dragOrigin.current.y;
-        tgtS.current.theta = tgtAtDragStart.current.theta - dx * ROTATE_SENS;
-        tgtS.current.phi   = THREE.MathUtils.clamp(
-          tgtAtDragStart.current.phi + dy * ROTATE_SENS,
-          0.06, Math.PI - 0.06,
-        );
+      if (e.touches.length === 1) {
+        const dx = cur[0].x - touchStartPos.current.x;
+        const dy = cur[0].y - touchStartPos.current.y;
+        const moved = Math.hypot(dx, dy);
+
+        if (!dragging.current && moved > TAP_THRESHOLD) {
+          // Crossed the drag threshold — now it's a drag, not a tap
+          dragging.current = true;
+        }
+
+        if (dragging.current) {
+          e.preventDefault(); // prevent page scroll only when actually dragging
+          const ddx = cur[0].x - dragOrigin.current.x;
+          const ddy = cur[0].y - dragOrigin.current.y;
+          tgtS.current.theta = tgtAtDragStart.current.theta - ddx * ROTATE_SENS;
+          tgtS.current.phi   = THREE.MathUtils.clamp(
+            tgtAtDragStart.current.phi + ddy * ROTATE_SENS,
+            0.06, Math.PI - 0.06,
+          );
+        }
       } else if (e.touches.length >= 2 && prevTouches.current.length >= 2) {
+        e.preventDefault();
         // Two-finger pinch → zoom toward midpoint between fingers
         const prev = prevTouches.current;
         const prevDist = Math.hypot(prev[1].x - prev[0].x, prev[1].y - prev[0].y);
         const curDist  = Math.hypot(cur[1].x  - cur[0].x,  cur[1].y  - cur[0].y);
 
         if (prevDist > 1) {
-          // pinchScale < 1 → fingers moving apart → zoom IN
           const pinchScale = prevDist / curDist;
           const midX = (cur[0].x + cur[1].x) / 2;
           const midY = (cur[0].y + cur[1].y) / 2;
@@ -220,7 +234,7 @@ function CameraController() {
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length === 0) dragging.current = false;
+      dragging.current = false;
       prevTouches.current = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
     };
 
@@ -244,7 +258,7 @@ function CameraController() {
       canvas.removeEventListener('touchend',   onTouchEnd);
       canvas.style.cursor = '';
     };
-  }, [camera, gl, raycaster, unitSphere, setHasInteracted]);
+  }, [camera, gl, raycaster, unitSphere, setHasInteracted, touchStartPos]);
 
   return null;
 }

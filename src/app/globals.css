@@ -739,10 +739,153 @@ html, body {
 }
 
 /* ============================================================
+   TOUCH ACTION — help R3F receive pointer events on mobile
+   ============================================================ */
+canvas {
+  touch-action: none;
+}
+
+/* ============================================================
+   MOBILE BOTTOM NAV BAR
+   ============================================================ */
+.mobile-nav {
+  display: none; /* hidden on desktop */
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 768px) {
-  .hdr { padding: 12px 16px; }
+
+  /* ── Header ── */
+  .hdr {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .hdr-logo-text { font-size: 15px; }
+  .hdr-logo-icon { width: 30px; height: 30px; }
+
+  /* Hide desktop nav pills — replaced by bottom nav */
   .hdr-nav { display: none; }
-  .status-bar { padding: 10px 16px; gap: 10px; }
+
+  /* Shrink live badge text */
+  .live-badge {
+    font-size: 9.5px;
+    padding: 5px 10px;
+    gap: 5px;
+  }
+  .live-badge span { display: none; } /* hide text, keep dot */
+  .live-dot { width: 8px; height: 8px; }
+
+  /* ── Status bar — hide non-essential items ── */
+  .status-bar { padding: 8px 14px; gap: 8px; }
+  .status-item:nth-child(n+5) { display: none; } /* hide VER item */
+  .status-div:last-of-type    { display: none; }
+
+  /* ── Hint ── */
+  .hint {
+    font-size: 10px;
+    white-space: normal;
+    text-align: center;
+    width: 90vw;
+    bottom: 68px;
+    line-height: 1.5;
+  }
+
+  /* ── Corner brackets — smaller on mobile ── */
+  .corner { width: 28px; height: 28px; }
+  .corner.tl { top: 10px; left: 10px; }
+  .corner.tr { top: 10px; right: 10px; }
+  .corner.bl { bottom: 52px; left: 10px; }
+  .corner.br { bottom: 52px; right: 10px; }
+
+  /* ── EventPopup card — full safe width ── */
+  .sp-card {
+    width: min(310px, 92vw);
+    padding: 14px 14px 16px;
+  }
+  .sp-name { font-size: 17px; }
+  .sp-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* ── Bottom mobile nav bar ── */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 110;
+    background: rgba(6, 8, 15, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(94, 184, 255, 0.12);
+    padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(238, 242, 247, 0.38);
+    font-family: var(--font-main);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 0.2s, transform 0.15s;
+    border-radius: 10px;
+    min-width: 56px;
+    text-decoration: none;
+  }
+  .mobile-nav-btn:active { transform: scale(0.92); }
+  .mobile-nav-btn.active { color: var(--blue); }
+  .mobile-nav-btn.active .mobile-nav-icon {
+    background: rgba(94, 184, 255, 0.10);
+    border-color: rgba(94, 184, 255, 0.28);
+  }
+
+  .mobile-nav-icon {
+    font-size: 18px;
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  /* ── Push globe canvas up so bottom nav doesn't cover it ── */
+  /* The canvas wrapper is position:fixed inset:0 — we clip bottom */
+  /* via a CSS variable that the canvas reads */
+  .globe-canvas-wrap {
+    bottom: 52px !important;
+  }
+
+  /* ── TabPanel — slide up as full-screen bottom sheet ── */
+  .tab-panel-mobile {
+    position: fixed !important;
+    top: 62px !important;
+    right: 0 !important;
+    bottom: 52px !important;
+    left: 0 !important;
+    width: 100% !important;
+    border-radius: 14px 14px 0 0 !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(0,255,255,0.13) !important;
+  }
+
+  /* ── QuickAdd modal ── */
+  .quick-add-modal-inner {
+    width: min(460px, 94vw) !important;
+    padding: 20px 16px 18px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .sp-stats { grid-template-columns: 1fr 1fr; }
+  .sp-coords-row { grid-template-columns: 1fr; }
+  .mobile-nav-btn { min-width: 44px; padding: 6px 8px; }
 }

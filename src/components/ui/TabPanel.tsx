@@ -28,7 +28,7 @@ function fmt(n: number) {
 
 export default function TabPanel({ tab, events, onClose }: TabPanelProps) {
   return (
-    <aside style={{
+    <aside className="tab-panel-mobile" style={{
       position: 'fixed', top: 72, right: 0, bottom: 36,
       width: 340, zIndex: 80,
       background: 'linear-gradient(180deg, rgba(6,6,20,0.97) 0%, rgba(8,4,22,0.96) 100%)',

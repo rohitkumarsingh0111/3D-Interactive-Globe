@@ -162,7 +162,7 @@ function QuickAddModal({ onClose }: { onClose: () => void }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(0,0,0,0.65)',
       backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: 460, background: 'rgba(6,6,22,0.98)',
+      <div className="quick-add-modal-inner" style={{ width: 460, maxWidth: '95vw', background: 'rgba(6,6,22,0.98)',
         border: '1px solid rgba(0,255,255,0.22)', borderRadius: 20,
         boxShadow: '0 24px 80px rgba(0,0,0,0.8), 0 0 60px rgba(0,255,255,0.06)',
         padding: '28px 28px 24px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
