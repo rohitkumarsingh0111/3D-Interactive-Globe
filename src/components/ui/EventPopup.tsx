@@ -79,9 +79,11 @@ function PopupCard({ event, onClose }: PopupCardProps) {
         <div className="sp-live-badge">
           <span className="sp-live-ring" aria-hidden="true" />
           <span className="sp-live-dot"  aria-hidden="true" />
-          BROADCASTING LIVE
+          {event.source === 'world' ? 'REAL-WORLD EVENT' : 'BROADCASTING LIVE'}
         </div>
-        <div className="sp-uptime">UPTIME 99.9%</div>
+        <div className="sp-uptime">
+          {event.source === 'world' ? event.duration?.toUpperCase() : 'UPTIME 99.9%'}
+        </div>
       </div>
 
       {/* ── Event name (hero text) ── */}
@@ -144,13 +146,30 @@ function PopupCard({ event, onClose }: PopupCardProps) {
       </div>
 
       {/* ── CTA button ── */}
-      <button className="sp-cta">
-        <span>JOIN EVENT</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
-        </svg>
-      </button>
+      {event.source === 'world' && event.url ? (
+        <a
+          href={event.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sp-cta"
+          style={{ textDecoration: 'none' }}
+        >
+          <span>VIEW SOURCE</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      ) : (
+        <button className="sp-cta">
+          <span>JOIN EVENT</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      )}
 
       {/* Scanline overlay */}
       <div className="sp-scanlines" aria-hidden="true" />

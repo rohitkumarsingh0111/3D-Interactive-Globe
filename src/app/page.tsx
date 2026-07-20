@@ -14,12 +14,11 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import TabPanel      from '@/components/ui/TabPanel';
 
 const NAV_TABS: { id: NavTab; label: string; icon: string }[] = [
-  { id: 'globe',     label: 'Globe',     icon: '🌐' },
-  { id: 'events',    label: 'Events',    icon: '📡' },
-  { id: 'analytics', label: 'Stats',     icon: '📊' },
-  { id: 'network',   label: 'Network',   icon: '🔗' },
+  { id: 'globe',     label: 'Globe',   icon: '🌐' },
+  { id: 'events',   label: 'Events',   icon: '📡' },
+  { id: 'analytics', label: 'Stats',   icon: '📊' },
+  { id: 'network',  label: 'Network',  icon: '🔗' },
 ];
-
 
 const GlobeScene = dynamic(() => import('@/components/scene/GlobeScene'), {
   ssr: false, loading: () => null,
@@ -28,19 +27,49 @@ const GlobeScene = dynamic(() => import('@/components/scene/GlobeScene'), {
 export default function HomePage() {
   const hasInteracted = useGlobeStore((s) => s.hasInteracted);
   const [hintHidden, setHintHidden] = useState(false);
+
+  // Admin-added events (from DB)
   const [events, setEvents]         = useState<GlobeEvent[]>(STATIC_FALLBACK);
+  // Real-world events (NASA + USGS)
+  const [worldEvents, setWorldEvents] = useState<GlobeEvent[]>([]);
+  const [worldLoading, setWorldLoading] = useState(true);
+
   const [activeTab, setActiveTab]   = useState<NavTab>('globe');
 
+  /* ── Fetch admin events ────────────────────────────────── */
   const fetchEvents = async () => {
     try {
       const res = await fetch('/api/events');
-      if (res.ok) { const d: GlobeEvent[] = await res.json(); if (d.length > 0) setEvents(d); }
+      if (res.ok) {
+        const d: GlobeEvent[] = await res.json();
+        if (d.length > 0) setEvents(d.map(e => ({ ...e, source: 'admin' as const })));
+      }
     } catch { /* static fallback */ }
+  };
+
+  /* ── Fetch world events ────────────────────────────────── */
+  const fetchWorldEvents = async () => {
+    setWorldLoading(true);
+    try {
+      const res = await fetch('/api/world-events');
+      if (res.ok) {
+        const d: GlobeEvent[] = await res.json();
+        setWorldEvents(d);
+      }
+    } catch { /* silent — globe still works */ }
+    finally { setWorldLoading(false); }
   };
 
   useEffect(() => {
     fetchEvents();
     const iv = setInterval(fetchEvents, 30_000);
+    return () => clearInterval(iv);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchWorldEvents();
+    const iv = setInterval(fetchWorldEvents, 10 * 60_000); // refresh every 10 min
     return () => clearInterval(iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -56,13 +85,16 @@ export default function HomePage() {
     setActiveTab(prev => prev === tab ? 'globe' : tab);
   };
 
+  // Combined events for the globe: admin + world
+  const allGlobeEvents = [...events, ...worldEvents];
+
   return (
     <>
       <LoadingScreen />
 
       {/* 3D canvas — always full screen, clips bottom on mobile */}
       <div className="globe-canvas-wrap" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
-        <GlobeScene events={events} />
+        <GlobeScene events={allGlobeEvents} />
       </div>
 
       {/* Scanlines */}
@@ -82,19 +114,22 @@ export default function HomePage() {
         onEventAdded={fetchEvents}
       />
 
-      {/* Right slide-in panel (Events / Analytics / Network tabs) */}
+      {/* Right slide-in panel */}
       {activeTab !== 'globe' && (
         <TabPanel
           tab={activeTab}
           events={events}
+          worldEvents={worldEvents}
+          worldLoading={worldLoading}
+          onWorldRefresh={fetchWorldEvents}
           onClose={() => setActiveTab('globe')}
         />
       )}
 
       {/* Status bar */}
-      <StatusBar events={events} />
+      <StatusBar events={events} worldEvents={worldEvents} />
 
-      {/* Centered event card — shown only on marker click or Events tab click */}
+      {/* Centered event card */}
       <EventPopup />
 
       {/* Interaction hint */}
@@ -105,7 +140,7 @@ export default function HomePage() {
         ↔ Drag · Pinch zoom · Tap markers
       </div>
 
-      {/* Mobile bottom navigation bar (hidden on desktop via CSS) */}
+      {/* Mobile bottom navigation bar */}
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {NAV_TABS.map(({ id, label, icon }) => (
           <button

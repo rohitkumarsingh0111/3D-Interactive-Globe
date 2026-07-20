@@ -13,6 +13,10 @@ export interface GlobeEvent {
   duration: string;
   color: string;       // CSS hex e.g. '#00FFFF'
   threeColor: number;  // Three.js hex e.g. 0x00FFFF
+  // World event fields
+  source?: 'admin' | 'world';
+  severity?: number;   // earthquake magnitude, fire intensity, etc.
+  url?: string;        // link to original source/report
 }
 
 export interface PopupState {

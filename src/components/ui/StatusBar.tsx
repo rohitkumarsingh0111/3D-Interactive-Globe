@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GlobeEvent } from '@/types/globe';
 
-interface StatusBarProps { events?: GlobeEvent[]; }
+interface StatusBarProps { events?: GlobeEvent[]; worldEvents?: GlobeEvent[]; }
 
 function parseUsers(s: string): number {
   if (!s) return 0;
@@ -19,7 +19,7 @@ function fmt(n: number) {
   return String(n);
 }
 
-export default function StatusBar({ events = [] }: StatusBarProps) {
+export default function StatusBar({ events = [], worldEvents = [] }: StatusBarProps) {
   const [fps, setFps]   = useState(60);
   const frameRef        = useRef(0);
   const lastRef         = useRef(performance.now());
@@ -40,8 +40,9 @@ export default function StatusBar({ events = [] }: StatusBarProps) {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const fpsColor = fps >= 55 ? '#4ade80' : fps >= 30 ? '#facc15' : '#f87171';
+  const fpsColor   = fps >= 55 ? '#4ade80' : fps >= 30 ? '#facc15' : '#f87171';
   const totalUsers = events.reduce((s, e) => s + parseUsers(e.users), 0);
+  const totalNodes = events.length + worldEvents.length;
 
   return (
     <footer className="status-bar" role="contentinfo">
@@ -52,7 +53,12 @@ export default function StatusBar({ events = [] }: StatusBarProps) {
       <div className="status-div" />
       <div className="status-item">
         <span className="status-key">NODES</span>
-        <span className="status-val">{events.length} ACTIVE</span>
+        <span className="status-val">{totalNodes} ACTIVE</span>
+      </div>
+      <div className="status-div" />
+      <div className="status-item">
+        <span className="status-key">🌍 WORLD</span>
+        <span className="status-val" style={{ color: '#A855F7' }}>{worldEvents.length}</span>
       </div>
       <div className="status-div" />
       <div className="status-item">
@@ -63,11 +69,6 @@ export default function StatusBar({ events = [] }: StatusBarProps) {
       <div className="status-item">
         <span className="status-key">SIGNAL</span>
         <span className="status-val" style={{ color: '#4ade80' }}>STRONG</span>
-      </div>
-      <div className="status-div" />
-      <div className="status-item">
-        <span className="status-key">VER</span>
-        <span className="status-val">2.6.1</span>
       </div>
     </footer>
   );

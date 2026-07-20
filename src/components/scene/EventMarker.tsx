@@ -87,12 +87,15 @@ export default function EventMarker({
   const markerTex = useMemo(() => makeMarkerTexture(event.color), [event.color]);
   const pingTex   = useMemo(() => makePingTexture(event.color),   [event.color]);
 
-  // Pulse the ping ring
+  // Pulse the ping ring — faster for major world events
   useFrame(({ clock }) => {
     if (!pingRef.current) return;
-    const t = ((clock.getElapsedTime() * 1.1) + phaseOffset) % 1;
+    const isWorld = event.source === 'world';
+    const isMajor = isWorld && (event.severity ?? 0) >= 6.5;
+    const speed   = isMajor ? 2.0 : isWorld ? 1.5 : 1.1;
+    const t = ((clock.getElapsedTime() * speed) + phaseOffset) % 1;
     pingRef.current.scale.setScalar(0.14 + t * 0.30);
-    pingRef.current.material.opacity = (1 - t) * 0.9;
+    pingRef.current.material.opacity = (1 - t) * (isMajor ? 1.0 : 0.9);
   });
 
   // On click — project the sprite's WORLD position (after group rotation) to screen
@@ -112,10 +115,15 @@ export default function EventMarker({
     setHasInteracted();
   }, [camera, gl, event, setActiveEvent, setHasInteracted]);
 
+  // Marker scale: world events smaller, major quakes bigger, admin events normal
+  const isWorld  = event.source === 'world';
+  const isMajor  = isWorld && (event.severity ?? 0) >= 6.5;
+  const baseScale = isMajor ? 0.14 : isWorld ? 0.09 : 0.15;
+
   return (
     <group position={localPos}>
       {/* Glow core — clickable */}
-      <sprite ref={coreRef} scale={[0.15, 0.15, 0.15]} onClick={handleClick}>
+      <sprite ref={coreRef} scale={[baseScale, baseScale, baseScale]} onClick={handleClick}>
         <spriteMaterial
           map={markerTex}
           transparent
@@ -126,7 +134,7 @@ export default function EventMarker({
       </sprite>
 
       {/* Expanding ping ring */}
-      <sprite ref={pingRef} scale={[0.15, 0.15, 0.15]}>
+      <sprite ref={pingRef} scale={[baseScale, baseScale, baseScale]}>
         <spriteMaterial
           map={pingTex}
           transparent
