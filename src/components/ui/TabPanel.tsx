@@ -131,6 +131,7 @@ function EventsTab({
 }) {
   const [feed, setFeed] = useState<'mine' | 'world'>('mine');
   const [catFilter, setCatFilter] = useState<string>('All');
+  const [sortBy, setSortBy] = useState<'newest' | 'severity' | 'region'>('newest');
 
   // Unique categories in world events
   const allCats = ['All', ...Array.from(new Set(worldEvents.map(e => e.category))).sort()];
@@ -160,13 +161,15 @@ function EventsTab({
       {/* ── MY EVENTS ─────────────────────────────────── */}
       {feed === 'mine' && <MyEventsView events={events} />}
 
-      {/* ── WORLD FEED ────────────────────────────────── */}
+      {/* ── WORLD FEED ── */}
       {feed === 'world' && (
         <WorldFeedView
           events={filteredWorld}
           allCats={allCats}
           catFilter={catFilter}
           onCatFilter={setCatFilter}
+          sortBy={sortBy}
+          onSortBy={setSortBy}
           loading={worldLoading}
           onRefresh={onWorldRefresh}
           totalCount={worldEvents.length}
@@ -252,22 +255,38 @@ function MyEventsView({ events }: { events: GlobeEvent[] }) {
 
 /* ── World Feed (NASA + USGS) ────────────────────────── */
 function WorldFeedView({
-  events, allCats, catFilter, onCatFilter, loading, onRefresh, totalCount,
+  events, allCats, catFilter, onCatFilter,
+  sortBy, onSortBy,
+  loading, onRefresh, totalCount,
 }: {
   events: GlobeEvent[];
   allCats: string[];
   catFilter: string;
   onCatFilter: (c: string) => void;
+  sortBy: 'newest' | 'severity' | 'region';
+  onSortBy: (s: 'newest' | 'severity' | 'region') => void;
   loading: boolean;
   onRefresh?: () => void;
   totalCount: number;
 }) {
   const setActiveEvent = useGlobeStore(s => s.setActiveEvent);
 
+  // Apply sort
+  const sorted = [...events].sort((a, b) => {
+    if (sortBy === 'severity') {
+      return (b.severity ?? 0) - (a.severity ?? 0);
+    }
+    if (sortBy === 'region') {
+      return (a.country ?? '').localeCompare(b.country ?? '');
+    }
+    // newest: leave as-is (already sorted newest first from APIs)
+    return 0;
+  });
+
   return (
     <div>
-      {/* ── Header bar ─────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      {/* ── Header bar ─────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
           color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em' }}>
           {loading ? 'UPDATING…' : `${totalCount} ACTIVE EVENTS`}
@@ -280,6 +299,28 @@ function WorldFeedView({
         }}>
           <span style={{ display: 'inline-block', animation: loading ? 'spin-slow 1s linear infinite' : 'none' }}>↻</span>
         </button>
+      </div>
+
+      {/* ── Sort controls ────────────────────────── */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
+        <span style={{ fontSize: 8, fontFamily: "'JetBrains Mono',monospace",
+          color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em',
+          alignSelf: 'center', flexShrink: 0 }}>SORT</span>
+        {([
+          ['newest',   '⏱ NEWEST'],
+          ['severity', '⚠️ SEVERITY'],
+          ['region',   '🌍 REGION'],
+        ] as const).map(([key, label]) => (
+          <button key={key} onClick={() => onSortBy(key)} style={{
+            padding: '4px 9px',
+            background: sortBy === key ? 'rgba(0,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+            border: sortBy === key ? '1px solid rgba(0,255,255,0.4)' : '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 20, cursor: 'pointer',
+            color: sortBy === key ? '#00FFFF' : 'rgba(255,255,255,0.4)',
+            fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+            letterSpacing: '0.07em', transition: 'all 0.15s',
+          }}>{label}</button>
+        ))}
       </div>
 
       {/* ── Category filter chips ───────────────────────── */}
@@ -312,18 +353,18 @@ function WorldFeedView({
         </div>
       )}
 
-      {/* ── Event cards ─────────────────────────────────── */}
+      {/* ── Empty state ──────────────────────────────── */}
       {!loading && events.length === 0 && (
         <div style={{ textAlign: 'center', padding: '32px 0',
           color: 'rgba(255,255,255,0.25)', fontFamily: "'JetBrains Mono',monospace", fontSize: 11 }}>
-          No events in this category<br/>
+          No events match your filter<br/>
           <span style={{ fontSize: 9, marginTop: 6, display: 'block', color: 'rgba(0,255,255,0.3)' }}>
-            Try a different filter or refresh
+            Try a different category or use CLEAR on the globe
           </span>
         </div>
       )}
 
-      {events.map((ev) => {
+      {sorted.map((ev) => {
         const icon = getCatIcon(ev.category);
         const isQuake = ev.category === 'Earthquake';
         const mag = ev.severity;

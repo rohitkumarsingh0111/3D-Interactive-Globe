@@ -2,22 +2,23 @@
 
 // src/app/page.tsx
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
-import { useGlobeStore } from '@/store/globeStore';
+import { useEffect, useMemo, useState } from 'react';
+import { useGlobeStore, applyGlobeFilter } from '@/store/globeStore';
 import type { GlobeEvent } from '@/types/globe';
 import { GLOBE_EVENTS as STATIC_FALLBACK } from '@/data/events';
 
 import Header, { type NavTab } from '@/components/ui/Header';
-import StatusBar     from '@/components/ui/StatusBar';
-import EventPopup    from '@/components/ui/EventPopup';
-import LoadingScreen from '@/components/ui/LoadingScreen';
-import TabPanel      from '@/components/ui/TabPanel';
+import StatusBar        from '@/components/ui/StatusBar';
+import EventPopup       from '@/components/ui/EventPopup';
+import LoadingScreen    from '@/components/ui/LoadingScreen';
+import TabPanel         from '@/components/ui/TabPanel';
+import GlobeFilterBar   from '@/components/ui/GlobeFilterBar';
 
 const NAV_TABS: { id: NavTab; label: string; icon: string }[] = [
   { id: 'globe',     label: 'Globe',   icon: '🌐' },
-  { id: 'events',   label: 'Events',   icon: '📡' },
+  { id: 'events',    label: 'Events',  icon: '📡' },
   { id: 'analytics', label: 'Stats',   icon: '📊' },
-  { id: 'network',  label: 'Network',  icon: '🔗' },
+  { id: 'network',   label: 'Network', icon: '🔗' },
 ];
 
 const GlobeScene = dynamic(() => import('@/components/scene/GlobeScene'), {
@@ -25,18 +26,21 @@ const GlobeScene = dynamic(() => import('@/components/scene/GlobeScene'), {
 });
 
 export default function HomePage() {
-  const hasInteracted = useGlobeStore((s) => s.hasInteracted);
+  const hasInteracted  = useGlobeStore((s) => s.hasInteracted);
+  const filterRegion   = useGlobeStore((s) => s.filterRegion);
+  const filterCategory = useGlobeStore((s) => s.filterCategory);
+
   const [hintHidden, setHintHidden] = useState(false);
 
   // Admin-added events (from DB)
-  const [events, setEvents]         = useState<GlobeEvent[]>(STATIC_FALLBACK);
-  // Real-world events (NASA + USGS)
+  const [events, setEvents]           = useState<GlobeEvent[]>(STATIC_FALLBACK);
+  // Real-world events (NASA + USGS + Ticketmaster)
   const [worldEvents, setWorldEvents] = useState<GlobeEvent[]>([]);
   const [worldLoading, setWorldLoading] = useState(true);
 
-  const [activeTab, setActiveTab]   = useState<NavTab>('globe');
+  const [activeTab, setActiveTab] = useState<NavTab>('globe');
 
-  /* ── Fetch admin events ────────────────────────────────── */
+  /* ── Fetch admin events ─────────────────────────────── */
   const fetchEvents = async () => {
     try {
       const res = await fetch('/api/events');
@@ -47,7 +51,7 @@ export default function HomePage() {
     } catch { /* static fallback */ }
   };
 
-  /* ── Fetch world events ────────────────────────────────── */
+  /* ── Fetch world events ─────────────────────────────── */
   const fetchWorldEvents = async () => {
     setWorldLoading(true);
     try {
@@ -69,7 +73,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchWorldEvents();
-    const iv = setInterval(fetchWorldEvents, 10 * 60_000); // refresh every 10 min
+    const iv = setInterval(fetchWorldEvents, 10 * 60_000);
     return () => clearInterval(iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -85,16 +89,30 @@ export default function HomePage() {
     setActiveTab(prev => prev === tab ? 'globe' : tab);
   };
 
-  // Combined events for the globe: admin + world
-  const allGlobeEvents = [...events, ...worldEvents];
+  // ── Apply filter to determine what shows on the globe ──
+  const allEvents = useMemo(
+    () => [...events, ...worldEvents],
+    [events, worldEvents],
+  );
+
+  const filteredGlobeEvents = useMemo(
+    () => applyGlobeFilter(allEvents, filterRegion, filterCategory),
+    [allEvents, filterRegion, filterCategory],
+  );
+
+  // Filtered world events for the panel (same filter, world only)
+  const filteredWorldEvents = useMemo(
+    () => applyGlobeFilter(worldEvents, filterRegion, filterCategory),
+    [worldEvents, filterRegion, filterCategory],
+  );
 
   return (
     <>
       <LoadingScreen />
 
-      {/* 3D canvas — always full screen, clips bottom on mobile */}
+      {/* 3D canvas — only shows FILTERED events */}
       <div className="globe-canvas-wrap" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
-        <GlobeScene events={allGlobeEvents} />
+        <GlobeScene events={filteredGlobeEvents} />
       </div>
 
       {/* Scanlines */}
@@ -106,7 +124,7 @@ export default function HomePage() {
       <div className="corner bl" aria-hidden="true" />
       <div className="corner br" aria-hidden="true" />
 
-      {/* Header with nav tabs + admin add button */}
+      {/* Header */}
       <Header
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -114,12 +132,15 @@ export default function HomePage() {
         onEventAdded={fetchEvents}
       />
 
+      {/* Floating filter bar — always visible */}
+      <GlobeFilterBar eventCount={filteredGlobeEvents.length} />
+
       {/* Right slide-in panel */}
       {activeTab !== 'globe' && (
         <TabPanel
           tab={activeTab}
           events={events}
-          worldEvents={worldEvents}
+          worldEvents={filteredWorldEvents}
           worldLoading={worldLoading}
           onWorldRefresh={fetchWorldEvents}
           onClose={() => setActiveTab('globe')}
@@ -129,7 +150,7 @@ export default function HomePage() {
       {/* Status bar */}
       <StatusBar events={events} worldEvents={worldEvents} />
 
-      {/* Centered event card */}
+      {/* Centered event popup */}
       <EventPopup />
 
       {/* Interaction hint */}
@@ -140,7 +161,7 @@ export default function HomePage() {
         ↔ Drag · Pinch zoom · Tap markers
       </div>
 
-      {/* Mobile bottom navigation bar */}
+      {/* Mobile bottom nav */}
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {NAV_TABS.map(({ id, label, icon }) => (
           <button
