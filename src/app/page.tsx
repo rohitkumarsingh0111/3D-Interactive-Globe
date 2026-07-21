@@ -12,7 +12,6 @@ import StatusBar        from '@/components/ui/StatusBar';
 import EventPopup       from '@/components/ui/EventPopup';
 import LoadingScreen    from '@/components/ui/LoadingScreen';
 import TabPanel         from '@/components/ui/TabPanel';
-import GlobeFilterBar   from '@/components/ui/GlobeFilterBar';
 
 const NAV_TABS: { id: NavTab; label: string; icon: string }[] = [
   { id: 'globe',     label: 'Globe',   icon: '🌐' },
@@ -131,9 +130,6 @@ export default function HomePage() {
         events={events}
         onEventAdded={fetchEvents}
       />
-
-      {/* Floating filter bar — always visible */}
-      <GlobeFilterBar eventCount={filteredGlobeEvents.length} />
 
       {/* Right slide-in panel */}
       {activeTab !== 'globe' && (

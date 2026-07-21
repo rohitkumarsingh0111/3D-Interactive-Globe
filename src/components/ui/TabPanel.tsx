@@ -3,7 +3,7 @@
 // Sliding right-side panel for Events / Analytics / Network tabs
 
 import { useState } from 'react';
-import { useGlobeStore } from '@/store/globeStore';
+import { useGlobeStore, type RegionFilter, type CategoryFilter } from '@/store/globeStore';
 import type { GlobeEvent } from '@/types/globe';
 import type { NavTab } from './Header';
 
@@ -129,6 +129,12 @@ function EventsTab({
   worldLoading: boolean;
   onWorldRefresh?: () => void;
 }) {
+  const filterRegion      = useGlobeStore(s => s.filterRegion);
+  const filterCategory    = useGlobeStore(s => s.filterCategory);
+  const setFilterRegion   = useGlobeStore(s => s.setFilterRegion);
+  const setFilterCategory = useGlobeStore(s => s.setFilterCategory);
+  const resetFilters      = useGlobeStore(s => s.resetFilters);
+
   const [feed, setFeed] = useState<'mine' | 'world'>('mine');
   const [catFilter, setCatFilter] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'newest' | 'severity' | 'region'>('newest');
@@ -140,8 +146,135 @@ function EventsTab({
     ? worldEvents
     : worldEvents.filter(e => e.category === catFilter);
 
+  const isFiltered = filterRegion !== 'all' || filterCategory !== 'all';
+
+  // Region chips config
+  const REGIONS: { id: RegionFilter; label: string; flag: string }[] = [
+    { id: 'all',      label: 'All',      flag: '🌐' },
+    { id: 'india',    label: 'India',    flag: '🇮🇳' },
+    { id: 'asia',     label: 'Asia',     flag: '🌏' },
+    { id: 'europe',   label: 'Europe',   flag: '🌍' },
+    { id: 'americas', label: 'Americas', flag: '🌎' },
+    { id: 'africa',   label: 'Africa',   flag: '🌍' },
+    { id: 'oceania',  label: 'Oceania',  flag: '🏝️' },
+  ];
+
+  // Category chips config
+  const CATS: { id: CategoryFilter; label: string; icon: string; color: string }[] = [
+    { id: 'all',        label: 'All',        icon: '📍', color: '#00FFFF' },
+    { id: 'admin',      label: 'My Events',  icon: '⭐', color: '#00FFFF' },
+    { id: 'natural',    label: 'Natural',    icon: '🌋', color: '#FF6B35' },
+    { id: 'earthquake', label: 'Earthquake', icon: '🫨', color: '#A855F7' },
+    { id: 'wildfire',   label: 'Wildfire',   icon: '🔥', color: '#FF4444' },
+    { id: 'storm',      label: 'Storm',      icon: '🌀', color: '#5EB8FF' },
+    { id: 'tech',       label: 'Tech',       icon: '💻', color: '#5EB8FF' },
+    { id: 'business',   label: 'Business',   icon: '💼', color: '#FFD700' },
+    { id: 'music',      label: 'Music',      icon: '🎵', color: '#FF6B9D' },
+    { id: 'sports',     label: 'Sports',     icon: '🏆', color: '#4ade80' },
+  ];
+
   return (
     <div>
+
+      {/* ═══════════════════════════════════════════════════════
+          GLOBE FILTER — what shows on the 3D globe
+      ═══════════════════════════════════════════════════════ */}
+      <div style={{
+        background: 'rgba(0,255,255,0.04)',
+        border: '1px solid rgba(0,255,255,0.10)',
+        borderRadius: 12, padding: '12px 12px 10px',
+        marginBottom: 16,
+      }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+            color: 'rgba(0,255,255,0.55)', letterSpacing: '0.14em', fontWeight: 700 }}>
+            🌐 GLOBE FILTER
+          </div>
+          {isFiltered && (
+            <button onClick={resetFilters} style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 20, padding: '2px 9px', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.45)', fontSize: 9,
+              fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.08em',
+              transition: 'all 0.15s',
+            }}>CLEAR ✕</button>
+          )}
+        </div>
+
+        {/* Region row */}
+        <div style={{ fontSize: 8, fontFamily: "'JetBrains Mono',monospace",
+          color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', marginBottom: 6 }}>REGION</div>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
+          {REGIONS.map(r => {
+            const active = filterRegion === r.id;
+            return (
+              <button key={r.id} onClick={() => setFilterRegion(r.id)} style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '4px 9px',
+                background: active ? 'rgba(0,255,255,0.14)' : 'rgba(255,255,255,0.04)',
+                border: active ? '1px solid rgba(0,255,255,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 20, cursor: 'pointer',
+                color: active ? '#00FFFF' : 'rgba(255,255,255,0.5)',
+                fontSize: 10, fontFamily: "'JetBrains Mono',monospace", fontWeight: active ? 700 : 400,
+                letterSpacing: '0.06em', transition: 'all 0.15s',
+                boxShadow: active ? '0 0 10px rgba(0,255,255,0.15)' : 'none',
+              }}>
+                <span style={{ fontSize: 12 }}>{r.flag}</span> {r.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Category row */}
+        <div style={{ fontSize: 8, fontFamily: "'JetBrains Mono',monospace",
+          color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', marginBottom: 6 }}>CATEGORY</div>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {CATS.map(c => {
+            const active = filterCategory === c.id;
+            return (
+              <button key={c.id} onClick={() => setFilterCategory(c.id)} style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '4px 9px',
+                background: active ? `${c.color}20` : 'rgba(255,255,255,0.04)',
+                border: active ? `1px solid ${c.color}80` : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 20, cursor: 'pointer',
+                color: active ? c.color : 'rgba(255,255,255,0.5)',
+                fontSize: 10, fontFamily: "'JetBrains Mono',monospace", fontWeight: active ? 700 : 400,
+                letterSpacing: '0.06em', transition: 'all 0.15s',
+                boxShadow: active ? `0 0 10px ${c.color}22` : 'none',
+              }}>
+                <span style={{ fontSize: 12 }}>{c.icon}</span> {c.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active filter summary */}
+        {isFiltered && (
+          <div style={{ marginTop: 10, paddingTop: 10,
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 8, fontFamily: "'JetBrains Mono',monospace",
+              color: '#4ade80', letterSpacing: '0.1em' }}>● FILTERING GLOBE</span>
+            <span style={{ fontSize: 8, fontFamily: "'JetBrains Mono',monospace",
+              color: 'rgba(255,255,255,0.3)' }}>—</span>
+            {filterRegion !== 'all' && (
+              <span style={{ fontSize: 8, color: '#00FFFF',
+                fontFamily: "'JetBrains Mono',monospace" }}>
+                {REGIONS.find(r => r.id === filterRegion)?.flag} {filterRegion.toUpperCase()}
+              </span>
+            )}
+            {filterCategory !== 'all' && (
+              <span style={{ fontSize: 8, color: CATS.find(c => c.id === filterCategory)?.color,
+                fontFamily: "'JetBrains Mono',monospace" }}>
+                {CATS.find(c => c.id === filterCategory)?.icon} {filterCategory.toUpperCase()}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ── Feed toggle ──────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {([['mine', '📡 MY EVENTS'], ['world', '🌍 WORLD FEED']] as const).map(([key, label]) => (
