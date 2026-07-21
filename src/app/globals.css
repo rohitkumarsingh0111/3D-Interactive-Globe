@@ -782,22 +782,22 @@ canvas {
   .status-item:nth-child(n+5) { display: none; } /* hide VER item */
   .status-div:last-of-type    { display: none; }
 
-  /* ── Hint ── */
+  /* ── Hint — above the bottom nav ── */
   .hint {
     font-size: 10px;
     white-space: normal;
     text-align: center;
     width: 90vw;
-    bottom: 68px;
+    bottom: 70px;
     line-height: 1.5;
   }
 
-  /* ── Corner brackets — smaller on mobile ── */
-  .corner { width: 28px; height: 28px; }
-  .corner.tl { top: 10px; left: 10px; }
-  .corner.tr { top: 10px; right: 10px; }
-  .corner.bl { bottom: 52px; left: 10px; }
-  .corner.br { bottom: 52px; right: 10px; }
+  /* ── Corner brackets — inside canvas margins ── */
+  .corner { width: 24px; height: 24px; }
+  .corner.tl { top: 72px; left: 20px; }
+  .corner.tr { top: 72px; right: 20px; }
+  .corner.bl { bottom: 74px; left: 20px; }
+  .corner.br { bottom: 74px; right: 20px; }
 
   /* ── EventPopup card — full safe width ── */
   .sp-card {
@@ -857,11 +857,22 @@ canvas {
     transition: background 0.2s, border-color 0.2s;
   }
 
-  /* ── Push globe canvas up so bottom nav doesn't cover it ── */
-  /* The canvas wrapper is position:fixed inset:0 — we clip bottom */
-  /* via a CSS variable that the canvas reads */
+  /* ── Globe canvas — contained with margin on all sides ── */
   .globe-canvas-wrap {
-    bottom: 52px !important;
+    top: 64px !important;          /* clear the header */
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 66px !important;       /* clear the bottom nav + a little breathing room */
+    border-radius: 20px !important;
+    overflow: hidden !important;   /* clip the canvas corners */
+    border: 1px solid rgba(0, 255, 255, 0.10) !important;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(0, 255, 255, 0.06) !important;
+  }
+
+  /* Canvas itself must fill the container fully */
+  .globe-canvas-wrap canvas {
+    border-radius: 20px !important;
   }
 
   /* ── TabPanel — slide up as full-screen bottom sheet ── */
